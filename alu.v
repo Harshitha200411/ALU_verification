@@ -19,6 +19,9 @@ reg mul_err;
 reg [b-1:0] opa_reg, opb_reg;
 reg [c-1:0] cmd_reg;
 
+reg [2*b-1:0] res_next;
+reg oflow_next, cout_next, g_next, l_next, e_next, err_next;
+
 wire signed [b-1:0] A = opa;
 wire signed [b-1:0] B = opb;
 reg signed [b:0] sres;
@@ -28,24 +31,43 @@ begin
 //reset logic
  if (rst) begin
   res <= 0; oflow <= 0; cout <= 0; g <= 0; l <= 0; e <= 0; err <= 0;
+  res_next <= 0; oflow_next <= 0; cout_next <= 0; g_next <= 0; l_next <= 0; e_next <= 0; err_next <= 0;
   mul_busy <= 0; mul_ready <= 0; mul_err <= 0;
  end
 
  else if (ce) begin
+  // Update outputs with 1-cycle delay
+  res <= res_next;
+  oflow <= oflow_next;
+  cout <= cout_next;
+  g <= g_next;
+  l <= l_next;
+  e <= e_next;
+  err <= err_next;
+  
+  res_next <= 0;
+  oflow_next <= 0;
+  cout_next <= 0;
+  g_next <= 0;
+  l_next <= 0;
+  e_next <= 0;
+  err_next <= 0;
+  
  //multiplication logic
     //2nd cycle
   if (mul_busy && !mul_ready) begin
     mul_ready <= 1;
-    err <= 0;
+    err_next <= 0;
   end
   
   //3rd cycle
-  else if (mul_busy && mul_ready) begin
+  else if (mul_busy && mul_ready && cmd == cmd_reg) begin
    
     if (!mul_err) begin
       case (cmd_reg)
         9:  res <= (opa_reg + 1) * (opb_reg + 1);
         10: res <= (opa_reg << 1) * opb_reg;
+        default: res_next <= 0;
       endcase
       err <= 0;
     end
@@ -70,37 +92,35 @@ begin
 
   //main logic
   else begin
-
-   res <= 0; oflow <= 0; cout <= 0; g <= 0; l <= 0; e <= 0; err <= 0;
     //arithematic operation
    if (mode) begin
     case (cmd)
 
      0: if (inp_valid==2'b11)
-          {cout, res[b-1:0]} <= {1'b0, opa} + {1'b0, opb};
+          {cout_next, res_next[b-1:0]} <= {1'b0, opa} + {1'b0, opb};
 
      1: if (inp_valid==2'b11) begin
-          res <= opa - opb;
-          oflow <= (opa < opb);
+          res_next <= opa - opb;
+          oflow_next <= (opa < opb);
         end
 
      2: if (inp_valid==2'b11)
-          {cout, res[b-1:0]} <= {1'b0, opa} + {1'b0, opb} + cin;
+          {cout_next, res_next[b-1:0]} <= {1'b0, opa} + {1'b0, opb} + cin;
 
      3: if (inp_valid==2'b11) begin
-          res <= opa - opb - cin;
-          oflow <= (opa < (opb + cin));
+          res_next <= opa - opb - cin;
+          oflow_next <= (opa < (opb + cin));
         end
 
-     4: if (inp_valid==2'b01) res <= A + 1;
-     5: if (inp_valid==2'b01) res <= A - 1;
-     6: if (inp_valid==2'b10) res <= B + 1;
-     7: if (inp_valid==2'b10) res <= B - 1;
+     4: if (inp_valid==2'b01) res_next <= A + 1;
+     5: if (inp_valid==2'b01) res_next <= A - 1;
+     6: if (inp_valid==2'b10) res_next <= B + 1;
+     7: if (inp_valid==2'b10) res_next <= B - 1;
 
      8: if (inp_valid==2'b11) begin
-          e <= (A == B);
-          l <= (A < B);
-          g <= (A > B);
+          e_next <= (A == B);
+          l_next <= (A < B);
+          g_next <= (A > B);
         end
 
      9 : begin
@@ -125,55 +145,54 @@ begin
 
      11: if (inp_valid==2'b11) begin
            sres = A + B;
-           res  <= sres;
-           oflow <= (A[b-1] == B[b-1]) && (sres[b-1] != A[b-1]);
-           e <= (A == B);
-           l <= (A < B);
-           g <= (A > B);
+           res_next  <= sres;
+           oflow_next <= (A[b-1] == B[b-1]) && (sres[b-1] != A[b-1]);
+           e_next <= (A == B);
+           l_next <= (A < B);
+           g_next <= (A > B);
          end
 
      12: if (inp_valid==2'b11) begin
            sres = A - B;
-           res  <= sres;
-           oflow <= (A[b-1] != B[b-1]) && (sres[b-1] != A[b-1]);
-           e <= (A == B);
-           l <= (A < B);
-           g <= (A > B);
+           res_next  <= sres;
+           oflow_next <= (A[b-1] != B[b-1]) && (sres[b-1] != A[b-1]);
+           e_next <= (A == B);
+           l_next <= (A < B);
+           g_next <= (A > B);
          end
 
      default: begin
-      res <= 0; oflow <= 0; cout <= 0; g <= 0; l <= 0; e <= 0; err <= 0;
+      res_next <= 0; oflow_next <= 0; cout_next <= 0; g_next <= 0; l_next <= 0; e_next <= 0; err_next <= 0;
      end
 
     endcase
    end
 
    else begin
-    res <= 0; oflow <= 0; cout <= 0; g <= 0; l <= 0; e <= 0; err <= 0;
     // logical operation
     case (cmd)
-     0: if (inp_valid==2'b11) res[b-1:0] <= opa & opb;
-     1: if (inp_valid==2'b11) res[b-1:0] <= (~(opa & opb));
-     2: if (inp_valid==2'b11) res[b-1:0] <= opa | opb;
-     3: if (inp_valid==2'b11) res[b-1:0] <= (~(opa | opb));
-     4: if (inp_valid==2'b11) res[b-1:0] <= opa ^ opb;
-     5: if (inp_valid==2'b11) res[b-1:0] <= (~(opa ^ opb));
-     6: if (inp_valid==2'b01) res[b-1:0] <= (~opa);
-     7: if (inp_valid==2'b10) res[b-1:0] <= (~opb);
-     8: if (inp_valid==2'b01) res[b-1:0] <= opa >> 1;
-     9: if (inp_valid==2'b01) res[b-1:0] <= opa << 1;
-     10: if (inp_valid==2'b10) res[b-1:0] <= opb >> 1;
-     11: if (inp_valid==2'b10) res[b-1:0] <= opb << 1;
+     0: if (inp_valid==2'b11) res_next <= opa & opb;
+     1: if (inp_valid==2'b11) res_next <= (~(opa & opb));
+     2: if (inp_valid==2'b11) res_next <= opa | opb;
+     3: if (inp_valid==2'b11) res_next <= (~(opa | opb));
+     4: if (inp_valid==2'b11) res_next <= opa ^ opb;
+     5: if (inp_valid==2'b11) res_next <= (~(opa ^ opb));
+     6: if (inp_valid==2'b01) res_next <= (~opa);
+     7: if (inp_valid==2'b10) res_next <= (~opb);
+     8: if (inp_valid==2'b01) res_next[b-1:0] <= (opa >> 1);
+     9: if (inp_valid==2'b01) res_next[b-1:0] <= (opa << 1);
+     10: if (inp_valid==2'b10) res_next[b-1:0] <= (opb >> 1);
+     11: if (inp_valid==2'b10) res_next[b-1:0] <= (opb << 1);
      12: if (inp_valid==2'b11) begin
-           res[b-1:0] <= (opa << opb[2:0]) | (opa >> (b - opb[2:0]));
-           if (|opb[b-1:3]) err <= 1;
+           res_next[b-1:0] <= (opa << opb[2:0]) | (opa >> (b - opb[2:0]));
+           if (|opb[b-1:3]) err_next <= 1;
          end
      13: if (inp_valid==2'b11) begin
-           res[b-1:0] <= (opa >> opb[2:0]) | (opa << (b - opb[2:0]));
-           if (|opb[b-1:3]) err <= 1;
+           res_next[b-1:0] <= (opa >> opb[2:0]) | (opa << (b - opb[2:0]));
+           if (|opb[b-1:3]) err_next <= 1;
          end
      default: begin
-      res <= 0; oflow <= 0; cout <= 0; g <= 0; l <= 0; e <= 0; err <= 0;
+      res_next <= 0; oflow_next <= 0; cout_next <= 0; g_next <= 0; l_next <= 0; e_next <= 0; err_next <= 0;
      end
     endcase
    end
