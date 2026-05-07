@@ -57,7 +57,7 @@ begin
     //2nd cycle
   if (mul_busy && !mul_ready) begin
     mul_ready <= 1;
-    err_next <= 0;
+    err <= 0;
   end
   
   //3rd cycle
@@ -67,7 +67,7 @@ begin
       case (cmd_reg)
         9:  res <= (opa_reg + 1) * (opb_reg + 1);
         10: res <= (opa_reg << 1) * opb_reg;
-        default: res_next <= 0;
+        default: res <= 0;
       endcase
       err <= 0;
     end
