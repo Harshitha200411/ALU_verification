@@ -130,28 +130,28 @@ begin
         end
 
      4: begin
-          if (inp_valid==2'b01)
+          if (inp_valid==2'b01|| inp_valid==2'b11)
             res_next <= A + 1;
           else
             err_next <= 1;
         end
 
      5: begin
-          if (inp_valid==2'b01)
+          if (inp_valid==2'b01|| inp_valid==2'b11)
             res_next <= A - 1;
           else
             err_next <= 1;
         end
 
      6: begin
-          if (inp_valid==2'b10)
+          if (inp_valid==2'b10|| inp_valid==2'b11)
             res_next <= B + 1;
           else
             err_next <= 1;
         end
 
      7: begin
-          if (inp_valid==2'b10)
+          if (inp_valid==2'b10|| inp_valid==2'b11)
             res_next <= B - 1;
           else
             err_next <= 1;
@@ -220,7 +220,7 @@ begin
       g_next <= 0; 
       l_next <= 0; 
       e_next <= 0; 
-      err_next <= 0;
+      err_next <= 1;
      end
 
     endcase
@@ -273,42 +273,42 @@ begin
         end
 
      6: begin
-          if (inp_valid==2'b01)
+          if (inp_valid==2'b01|| inp_valid==2'b11)
             res_next <= (~opa);
           else
             err_next <= 1;
         end
 
      7: begin
-          if (inp_valid==2'b10)
+          if (inp_valid==2'b10|| inp_valid==2'b11)
             res_next <= (~opb);
           else
             err_next <= 1;
         end
 
      8: begin
-          if (inp_valid==2'b01)
+          if (inp_valid==2'b01|| inp_valid==2'b11)
             res_next[b-1:0] <= (opa >> 1);
           else
             err_next <= 1;
         end
 
      9: begin
-          if (inp_valid==2'b01)
+          if (inp_valid==2'b01|| inp_valid==2'b11)
             res_next[b-1:0] <= (opa << 1);
           else
             err_next <= 1;
         end
 
      10: begin
-           if (inp_valid==2'b10)
+           if (inp_valid==2'b10|| inp_valid==2'b11)
              res_next[b-1:0] <= (opb >> 1);
            else
              err_next <= 1;
          end
 
      11: begin
-           if (inp_valid==2'b10)
+           if (inp_valid==2'b10 || inp_valid==2'b11)
              res_next[b-1:0] <= (opb << 1);
            else
              err_next <= 1;
@@ -339,7 +339,7 @@ begin
       g_next <= 0; 
       l_next <= 0; 
       e_next <= 0; 
-      err_next <= 0;
+      err_next <= 1;
      end
 
     endcase
