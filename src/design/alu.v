@@ -131,37 +131,37 @@ begin
 
      4: begin
           if (inp_valid==2'b01|| inp_valid==2'b11)
-            res_next <= A + 1;
+            res_next <= opa + 1;
           else
             err_next <= 1;
         end
 
      5: begin
           if (inp_valid==2'b01|| inp_valid==2'b11)
-            res_next <= A - 1;
+            res_next <= opa - 1;
           else
             err_next <= 1;
         end
 
      6: begin
           if (inp_valid==2'b10|| inp_valid==2'b11)
-            res_next <= B + 1;
+            res_next <= opb + 1;
           else
             err_next <= 1;
         end
 
      7: begin
           if (inp_valid==2'b10|| inp_valid==2'b11)
-            res_next <= B - 1;
+            res_next <= opb - 1;
           else
             err_next <= 1;
         end
 
      8: begin
           if (inp_valid==2'b11) begin
-            e_next <= (A == B);
-            l_next <= (A < B);
-            g_next <= (A > B);
+           e_next <= (opa == opb);
+           l_next <= (opa < opb);
+           g_next <= (opa > opb);
           end
           else
             err_next <= 1;
